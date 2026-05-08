@@ -85,6 +85,14 @@ pub use utils::*;
 
 pub use sp1_hypercube::SP1RecursionProof;
 
+/// Number of 32-bit words in the public-value digest committed by the guest.
+pub const PUBLIC_VALUE_DIGEST_WORDS: usize = sp1_hypercube::air::PV_DIGEST_NUM_WORDS;
+
+// Keep the JIT-side execution output layout tied to the proof-layer digest width.
+// This fails at compile time if either side changes the digest shape without updating the other.
+const _: [(); PUBLIC_VALUE_DIGEST_WORDS] = [(); sp1_jit::PUBLIC_VALUE_DIGEST_WORDS];
+const _: [(); 32] = [(); PUBLIC_VALUE_DIGEST_WORDS * core::mem::size_of::<u32>()];
+
 /// The default increment for the program counter. Is used for all instructions except
 /// for branches and jumps.
 pub const PC_INC: u32 = 4;

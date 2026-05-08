@@ -2,6 +2,7 @@
 use hashbrown::HashMap;
 use sp1_core_executor::{
     ExecutionError, MinimalExecutor, Program, UnsafeMemory, DEFAULT_MEMORY_LIMIT,
+    PUBLIC_VALUE_DIGEST_WORDS,
 };
 use sp1_jit::{MemValue, TraceChunkRaw};
 use std::sync::Arc;
@@ -152,6 +153,13 @@ impl MinimalExecutorRunner {
     #[inline]
     pub fn public_values_stream(&self) -> &Vec<u8> {
         self.inner.public_values_stream()
+    }
+
+    /// Get the public-value digest committed by the guest.
+    #[must_use]
+    #[inline]
+    pub fn public_value_digest(&self) -> &[u32; PUBLIC_VALUE_DIGEST_WORDS] {
+        self.inner.public_value_digest()
     }
 
     /// Consume self, and return the public values stream.

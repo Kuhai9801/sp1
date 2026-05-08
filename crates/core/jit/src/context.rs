@@ -1,4 +1,6 @@
-use crate::{debug, MemValue, RiscRegister, TraceChunkHeader};
+use crate::{
+    debug, MemValue, RiscRegister, TraceChunkHeader, PUBLIC_VALUE_DIGEST_WORDS,
+};
 use memmap2::{MmapMut, MmapOptions};
 use std::{collections::VecDeque, io, os::fd::RawFd, ptr::NonNull, sync::mpsc};
 
@@ -22,6 +24,10 @@ pub trait SyscallContext {
     fn input_buffer(&mut self) -> &mut VecDeque<Vec<u8>>;
     /// Get the public values stream.
     fn public_values_stream(&mut self) -> &mut Vec<u8>;
+    /// Record one public-value digest word emitted by the guest at halt.
+    fn commit_public_value_digest_word(&mut self, _word_idx: usize, _word: u32) {
+        // Contexts that do not preserve execute output may ignore this.
+    }
     /// Enter the unconstrained context.
     fn enter_unconstrained(&mut self) -> io::Result<()>;
     /// Exit the unconstrained context.
@@ -158,6 +164,12 @@ impl SyscallContext for JitContext {
         unsafe { self.public_values_stream() }
     }
 
+    fn commit_public_value_digest_word(&mut self, word_idx: usize, word: u32) {
+        unsafe {
+            self.public_value_digest.as_mut()[word_idx] = word;
+        }
+    }
+
     fn enter_unconstrained(&mut self) -> io::Result<()> {
         self.enter_unconstrained()
     }
@@ -257,6 +269,8 @@ pub struct JitContext {
     pub(crate) debug_sender: Option<mpsc::SyncSender<Option<debug::State>>>,
     /// The exit code of the program.
     pub(crate) exit_code: u32,
+    /// The public-value digest committed by the guest at halt.
+    pub(crate) public_value_digest: NonNull<[u32; PUBLIC_VALUE_DIGEST_WORDS]>,
 }
 
 impl JitContext {

@@ -28,6 +28,9 @@ pub use context::*;
 pub use instructions::*;
 pub use risc::*;
 
+/// Number of 32-bit words in the public-value digest passed through the JIT context.
+pub const PUBLIC_VALUE_DIGEST_WORDS: usize = 8;
+
 /// A function that accepts the memory pointer.
 pub type ExternFn = extern "C" fn(*mut JitContext);
 
@@ -210,6 +213,9 @@ pub struct JitFunction<M> {
     /// A stream of public values from the program (global to entire program).
     pub public_values_stream: Vec<u8>,
 
+    /// The public-value digest committed by the guest at halt.
+    pub public_value_digest: [u32; PUBLIC_VALUE_DIGEST_WORDS],
+
     /// Memory structure,
     pub memory: M,
 
@@ -256,6 +262,7 @@ impl<M: JitMemory> JitFunction<M> {
             input_buffer: VecDeque::new(),
             hints: Vec::new(),
             public_values_stream: Vec::new(),
+            public_value_digest: [0; PUBLIC_VALUE_DIGEST_WORDS],
             debug_sender: None,
             exit_code: 0,
         })
@@ -349,6 +356,7 @@ impl<M: JitMemory> JitFunction<M> {
             tracing,
             debug_sender: self.debug_sender.clone(),
             exit_code: self.exit_code,
+            public_value_digest: NonNull::new_unchecked(&mut self.public_value_digest),
         };
 
         tracing::debug_span!("JIT function", pc = ctx.pc, clk = ctx.clk).in_scope(|| {
@@ -400,6 +408,7 @@ impl<M: JitResetableMemory> JitFunction<M> {
         self.input_buffer = VecDeque::new();
         self.hints = Vec::new();
         self.public_values_stream = Vec::new();
+        self.public_value_digest = [0; PUBLIC_VALUE_DIGEST_WORDS];
         self.memory.reset();
 
         self.insert_memory_image();

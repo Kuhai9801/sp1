@@ -20,6 +20,7 @@ use hashbrown::HashMap;
 use crate::{
     minimal::ecall::ecall_handler, ExecutionError, Instruction, Opcode, Program, Register,
     SyscallCode, CLK_INC as CLK_INC_32, HALT_PC, PC_INC as PC_INC_32,
+    PUBLIC_VALUE_DIGEST_WORDS,
 };
 
 mod cow;
@@ -49,6 +50,7 @@ pub struct MinimalExecutor {
     exit_code: u32,
     max_trace_size: Option<u64>,
     public_values_stream: Vec<u8>,
+    public_value_digest: [u32; PUBLIC_VALUE_DIGEST_WORDS],
     hints: Vec<(u64, Vec<u8>)>,
     maybe_unconstrained: Option<UnconstrainedCtx>,
     debug_sender: Option<mpsc::SyncSender<Option<debug::State>>>,
@@ -165,6 +167,10 @@ impl SyscallContext for MinimalExecutor {
         &mut self.public_values_stream
     }
 
+    fn commit_public_value_digest_word(&mut self, word_idx: usize, word: u32) {
+        self.public_value_digest[word_idx] = word;
+    }
+
     fn enter_unconstrained(&mut self) -> io::Result<()> {
         assert!(
             self.maybe_unconstrained.is_none(),
@@ -279,6 +285,7 @@ impl MinimalExecutor {
             traces: None,
             max_trace_size,
             public_values_stream: Vec::new(),
+            public_value_digest: [0; PUBLIC_VALUE_DIGEST_WORDS],
             hints: Vec::new(),
             maybe_unconstrained: None,
             debug_sender: None,
@@ -474,6 +481,12 @@ impl MinimalExecutor {
     #[must_use]
     pub fn public_values_stream(&self) -> &Vec<u8> {
         &self.public_values_stream
+    }
+
+    /// Get the public-value digest committed by the guest.
+    #[must_use]
+    pub fn public_value_digest(&self) -> &[u32; PUBLIC_VALUE_DIGEST_WORDS] {
+        &self.public_value_digest
     }
 
     /// Consume self, and return the public values stream.

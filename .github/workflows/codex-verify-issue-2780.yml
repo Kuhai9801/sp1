@@ -1,0 +1,36 @@
+name: Codex Verify Issue 2780
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/verify-sp1-2780
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      SP1_CI_IN_PROGRESS: "true"
+      SP1_CIRCUIT_MODE: "release"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential protobuf-compiler pkg-config
+
+      - name: Install Rust components
+        run: |
+          rustup component add llvm-tools rustc-dev clippy
+
+      - name: Install SP1 guest toolchain
+        run: |
+          cargo run -p sp1-cli --no-default-features -- prove install-toolchain
+
+      - name: Run focused regression test
+        run: |
+          cargo test -p sp1-prover test_execute_with_optional_gas --release -- --nocapture

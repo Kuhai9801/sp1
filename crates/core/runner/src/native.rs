@@ -1,7 +1,7 @@
 use base64::{engine::general_purpose::URL_SAFE, Engine};
 use sp1_core_executor::{
     ExecutionError, MinimalTranspiler, Opcode, Program, UnsafeMemory, DEFAULT_MEMORY_LIMIT,
-    DEFAULT_TRACE_CHUNK_SLOTS,
+    DEFAULT_TRACE_CHUNK_SLOTS, PUBLIC_VALUE_DIGEST_WORDS,
 };
 use sp1_core_executor_runner_binary::{Input, Output};
 use sp1_jit::{
@@ -323,6 +323,12 @@ impl MinimalExecutorRunner {
     #[must_use]
     pub fn public_values_stream(&self) -> &Vec<u8> {
         &self.output().public_values_stream
+    }
+
+    /// Get the public-value digest committed by the guest.
+    #[must_use]
+    pub fn public_value_digest(&self) -> &[u32; PUBLIC_VALUE_DIGEST_WORDS] {
+        &self.output().public_value_digest
     }
 
     /// Consume self, and return the public values stream.

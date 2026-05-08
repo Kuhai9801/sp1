@@ -156,9 +156,16 @@ pub fn ecall_handler(ctx: &mut impl SyscallContext, code: SyscallCode) -> u64 {
             ctx.set_exit_code(arg1 as u32);
             None
         }
+        SyscallCode::COMMIT => {
+            let word_idx =
+                usize::try_from(arg1).expect("public-value digest index should fit in usize");
+            let digest_word =
+                u32::try_from(arg2).expect("public-value digest word should fit in u32");
+            ctx.commit_public_value_digest_word(word_idx, digest_word);
+            None
+        }
         SyscallCode::MPROTECT
         | SyscallCode::VERIFY_SP1_PROOF
-        | SyscallCode::COMMIT
         | SyscallCode::COMMIT_DEFERRED_PROOFS => None,
     }.unwrap_or(code as u64)
 }

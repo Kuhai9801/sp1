@@ -1,6 +1,9 @@
 //! Native executor implementation
 
-use crate::{memory::MAX_LOG_ADDR, Instruction, Opcode, Program, Register, HALT_PC};
+use crate::{
+    memory::MAX_LOG_ADDR, Instruction, Opcode, Program, Register, PUBLIC_VALUE_DIGEST_WORDS,
+    HALT_PC,
+};
 use memmap2::MmapMut;
 use sp1_jit::{
     debug, memory::AnonymousMemory, trace_capacity, DebugBackend, JitFunction, JitMemory, MemValue,
@@ -221,6 +224,12 @@ impl MinimalExecutor {
     #[must_use]
     pub fn public_values_stream(&self) -> &Vec<u8> {
         &self.compiled.public_values_stream
+    }
+
+    /// Get the public-value digest committed by the guest.
+    #[must_use]
+    pub fn public_value_digest(&self) -> &[u32; PUBLIC_VALUE_DIGEST_WORDS] {
+        &self.compiled.public_value_digest
     }
 
     /// Consume self, and return the public values stream.
